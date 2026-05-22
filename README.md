@@ -2,8 +2,8 @@
 
 > **Advanced Java + Selenium 4 test automation framework** built for enterprise-scale quality engineering. Featuring BDD with Cucumber, parallel cross-browser execution, dual reporting (Allure + ExtentReports), data-driven testing, Selenium Grid 4 support, and full CI/CD pipeline.
 
-[![CI Pipeline](https://github.com/YOUR_USERNAME/selenium-enterprise-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/selenium-enterprise-framework/actions)
-[![Nightly Regression](https://github.com/YOUR_USERNAME/selenium-enterprise-framework/actions/workflows/nightly.yml/badge.svg)](https://github.com/YOUR_USERNAME/selenium-enterprise-framework/actions)
+[![CI Pipeline](https://github.com/RohitGit0808/selenium-enterprise-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/RohitGit0808/selenium-enterprise-framework/actions)
+[![Nightly Regression](https://github.com/RohitGit0808/selenium-enterprise-framework/actions/workflows/nightly.yml/badge.svg)](https://github.com/RohitGit0808/selenium-enterprise-framework/actions)
 [![Java Version](https://img.shields.io/badge/Java-17-orange)](https://www.oracle.com/java/)
 [![Selenium](https://img.shields.io/badge/Selenium-4.18-green)](https://www.selenium.dev/)
 [![TestNG](https://img.shields.io/badge/TestNG-7.9-blue)](https://testng.org/)
@@ -218,7 +218,7 @@ selenium-enterprise-framework/
 ### Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/selenium-enterprise-framework.git
+git clone https://github.com/RohitGit0808/selenium-enterprise-framework.git
 cd selenium-enterprise-framework
 mvn dependency:resolve
 ```
