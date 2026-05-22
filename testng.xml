@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Selenium Enterprise Framework - Full Suite" verbose="1" thread-count="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <listeners>
+        <listener class-name="com.automation.listeners.TestListener"/>
+    </listeners>
+
+    <test name="Login Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.automation.tests.LoginTest"/>
+        </classes>
+    </test>
+
+    <test name="Inventory Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.automation.tests.InventoryTest"/>
+        </classes>
+    </test>
+
+    <test name="Checkout E2E Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="regression"/>
+                <include name="critical"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.automation.tests.CheckoutE2ETest"/>
+        </classes>
+    </test>
+
+</suite>

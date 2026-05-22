@@ -1,0 +1,147 @@
+version: "3.8"
+
+services:
+
+  # ─── Selenium Grid Hub ────────────────────────────────────────────────────
+  selenium-hub:
+    image: selenium/hub:4.18.1
+    container_name: selenium-hub
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+    environment:
+      - SE_NODE_MAX_SESSIONS=5
+      - SE_SESSION_REQUEST_TIMEOUT=300
+      - SE_SESSION_RETRY_INTERVAL=5
+    networks:
+      - selenium-grid
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 15s
+      timeout: 30s
+      retries: 5
+
+  # ─── Chrome Node ──────────────────────────────────────────────────────────
+  chrome-node:
+    image: selenium/node-chrome:4.18.1
+    container_name: selenium-chrome
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=3
+      - SE_NODE_SESSION_TIMEOUT=300
+      - SE_VNC_NO_PASSWORD=1
+      - JAVA_OPTS=-Xmx1g
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "7900:7900"   # noVNC browser viewer
+    networks:
+      - selenium-grid
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 2g
+
+  # ─── Firefox Node ─────────────────────────────────────────────────────────
+  firefox-node:
+    image: selenium/node-firefox:4.18.1
+    container_name: selenium-firefox
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=3
+      - SE_NODE_SESSION_TIMEOUT=300
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "7901:7900"
+    networks:
+      - selenium-grid
+
+  # ─── Edge Node ────────────────────────────────────────────────────────────
+  edge-node:
+    image: selenium/node-edge:4.18.1
+    container_name: selenium-edge
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=2
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "7902:7900"
+    networks:
+      - selenium-grid
+
+  # ─── Test Runner ──────────────────────────────────────────────────────────
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: test-runner
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - BROWSER=chrome
+      - HEADLESS=true
+      - REMOTE=true
+      - GRID_URL=http://selenium-hub:4444/wd/hub
+      - ENV=docker
+    volumes:
+      - ./test-output:/app/test-output
+      - ./target:/app/target
+    networks:
+      - selenium-grid
+    profiles:
+      - run-tests
+
+  # ─── Allure Server ────────────────────────────────────────────────────────
+  allure:
+    image: frankescobar/allure-docker-service:latest
+    container_name: allure-server
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 3
+      KEEP_HISTORY: 25
+      KEEP_HISTORY_LATEST: 25
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./target/allure-results:/app/allure-results
+      - allure-reports:/app/default-reports
+    networks:
+      - selenium-grid
+
+  # ─── Allure UI ────────────────────────────────────────────────────────────
+  allure-ui:
+    image: frankescobar/allure-docker-service-ui:latest
+    container_name: allure-ui
+    environment:
+      ALLURE_DOCKER_PUBLIC_API_URL: "http://localhost:5050"
+      ALLURE_DOCKER_PUBLIC_API_URL_PREFIX: ""
+    ports:
+      - "5252:5252"
+    networks:
+      - selenium-grid
+
+volumes:
+  allure-reports:
+
+networks:
+  selenium-grid:
+    driver: bridge

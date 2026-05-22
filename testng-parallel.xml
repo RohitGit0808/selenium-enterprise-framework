@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Selenium Enterprise Framework - Parallel Suite"
+       verbose="1"
+       parallel="tests"
+       thread-count="3">
+
+    <listeners>
+        <listener class-name="com.automation.listeners.TestListener"/>
+    </listeners>
+
+    <test name="Login Tests - Chrome">
+        <parameter name="browser" value="chrome"/>
+        <classes>
+            <class name="com.automation.tests.LoginTest"/>
+        </classes>
+    </test>
+
+    <test name="Inventory Tests - Firefox">
+        <parameter name="browser" value="firefox"/>
+        <classes>
+            <class name="com.automation.tests.InventoryTest"/>
+        </classes>
+    </test>
+
+    <test name="Checkout Tests - Edge">
+        <parameter name="browser" value="edge"/>
+        <classes>
+            <class name="com.automation.tests.CheckoutE2ETest"/>
+        </classes>
+    </test>
+
+</suite>

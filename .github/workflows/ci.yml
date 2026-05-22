@@ -1,0 +1,208 @@
+name: CI - Selenium Test Suite
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "fix/**"]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: "Browser to run tests (chrome|firefox|edge)"
+        required: true
+        default: "chrome"
+      suite:
+        description: "Test suite (smoke|regression|parallel|bdd)"
+        required: true
+        default: "smoke"
+
+env:
+  JAVA_VERSION: "17"
+  MAVEN_OPTS: "-Xmx2048m -XX:+UseG1GC"
+
+jobs:
+  # ─── Code Quality ───────────────────────────────────────────────────────────
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Validate Maven POM
+        run: mvn validate -q
+
+      - name: Compile source code
+        run: mvn compile -q
+
+  # ─── Smoke Tests ────────────────────────────────────────────────────────────
+  smoke-tests:
+    name: Smoke Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    needs: code-quality
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Setup Chrome
+        if: matrix.browser == 'chrome'
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Setup Firefox
+        if: matrix.browser == 'firefox'
+        uses: browser-actions/setup-firefox@v1
+
+      - name: Run Smoke Tests (headless)
+        run: |
+          mvn test \
+            -Psmoce \
+            -Dbrowser=${{ matrix.browser }}_headless \
+            -Dheadless=true \
+            -Dsuite.file=testng-smoke.xml \
+            -Dtest.env=ci
+
+      - name: Upload Allure Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-smoke-${{ matrix.browser }}
+          path: target/allure-results/
+          retention-days: 7
+
+      - name: Upload Screenshots on Failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshots-smoke-${{ matrix.browser }}
+          path: test-output/screenshots/
+          retention-days: 7
+
+  # ─── Regression Tests ────────────────────────────────────────────────────────
+  regression-tests:
+    name: Regression Tests
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run Regression Tests
+        run: |
+          mvn test \
+            -Pregression \
+            -Dbrowser=chrome_headless \
+            -Dheadless=true
+
+      - name: Upload Allure Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-regression
+          path: target/allure-results/
+          retention-days: 14
+
+  # ─── BDD Tests ───────────────────────────────────────────────────────────────
+  bdd-tests:
+    name: BDD / Cucumber Tests
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run BDD Tests
+        run: |
+          mvn test \
+            -Pbdd \
+            -Dbrowser=chrome_headless \
+            -Dheadless=true
+
+      - name: Upload Cucumber Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cucumber-reports
+          path: target/cucumber-reports/
+          retention-days: 7
+
+  # ─── Allure Report ───────────────────────────────────────────────────────────
+  publish-report:
+    name: Publish Allure Report
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, regression-tests, bdd-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all Allure results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: allure-results-*
+          merge-multiple: true
+          path: allure-results/
+
+      - name: Get Allure history
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results
+          allure_history: allure-history
+          keep_reports: 20
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history

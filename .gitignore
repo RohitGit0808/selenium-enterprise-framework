@@ -1,0 +1,36 @@
+# Maven
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.eclipse/
+.project
+.classpath
+.settings/
+*.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test Output
+test-output/
+allure-results/
+allure-report/
+
+# Logs
+*.log
+logs/
+
+# Driver binaries
+*.exe
+*.dmg
+*.pkg
+chromedriver
+geckodriver
+msedgedriver
+
+# Environment overrides
+config.local.properties

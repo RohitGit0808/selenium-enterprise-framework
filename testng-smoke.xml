@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Selenium Enterprise Framework - Smoke Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <listeners>
+        <listener class-name="com.automation.listeners.TestListener"/>
+    </listeners>
+
+    <test name="Smoke Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.automation.tests.LoginTest"/>
+            <class name="com.automation.tests.InventoryTest"/>
+            <class name="com.automation.tests.CheckoutE2ETest"/>
+        </classes>
+    </test>
+
+</suite>
